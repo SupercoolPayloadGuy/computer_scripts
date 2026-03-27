@@ -9,47 +9,61 @@ function Show-Menu($tools) {
     Write-Host ""
 
     for ($i = 0; $i -lt $tools.Count; $i++) {
-        $name = $tools[$i].BaseName -replace "_", " "
-        Write-Host "$($i+1). $name"
+        $displayName = $tools[$i].BaseName -replace "_", " "
+        Write-Host ("[{0}] {1}" -f ($i + 1), $displayName)
     }
 
     Write-Host ""
-    Write-Host "R. Refresh tools"
-    Write-Host "0. Exit"
+    Write-Host "[0] Exit"
+    Write-Host ""
 }
 
-do {
+while ($true) {
     $tools = Get-Tools
-    Show-Menu $tools
 
-    $choice = Read-Host "Select option"
-
-    if ($choice -eq "0") { break }
-
-    if ($choice -eq "R" -or $choice -eq "r") {
-        Write-Host "Refreshing..." -ForegroundColor Yellow
-        Start-Sleep 1
-        continue
+    if ($tools.Count -eq 0) {
+        Write-Host "No tools found in /tools folder." -ForegroundColor Red
+        break
     }
 
-    if ($choice -as [int] -and $choice -gt 0 -and $choice -le $tools.Count) {
-        $tool = $tools[$choice - 1]
+    Show-Menu $tools
 
-        Write-Host ""
-        Write-Host "Running $($tool.BaseName)..." -ForegroundColor Yellow
+    $input = Read-Host "Enter number"
 
-        try {
-            & $tool.FullName
+    # Ensure it's a valid number
+    if ($input -match '^\d+$') {
+        $choice = [int]$input
+
+        if ($choice -eq 0) {
+            Write-Host "Exiting..."
+            break
         }
-        catch {
-            Write-Host "Error: $_" -ForegroundColor Red
+
+        if ($choice -ge 1 -and $choice -le $tools.Count) {
+            $tool = $tools[$choice - 1]
+
+            Clear-Host
+            Write-Host "Running: $($tool.BaseName)" -ForegroundColor Yellow
+            Write-Host ""
+
+            try {
+                & $tool.FullName
+            }
+            catch {
+                Write-Host "Error running tool:" -ForegroundColor Red
+                Write-Host $_
+            }
+
+            Write-Host ""
+            Read-Host "Press Enter to return to menu"
+        }
+        else {
+            Write-Host "Invalid number." -ForegroundColor Red
+            Start-Sleep 1
         }
     }
     else {
-        Write-Host "Invalid selection" -ForegroundColor Red
+        Write-Host "Please enter a number only." -ForegroundColor Red
+        Start-Sleep 1
     }
-
-    Write-Host ""
-    Pause
-
-} while ($true)
+}
